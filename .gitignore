@@ -94,6 +94,8 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+birdy
+a.out
 
 # Files built by Visual Studio
 *_i.c

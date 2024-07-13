@@ -8,7 +8,7 @@ using json = nlohmann::json;
 
 std::string root;
 std::string auth_token;
-const auto server_address = "http://localhost:5000/login";
+std::string server_address = "http://localhost:5000";
 
 int main(int argc, char *argv[])
 {
@@ -51,6 +51,12 @@ int main(int argc, char *argv[])
             uninstall(uninstallArgs[0]);
         }
 
+        if (parser.present("--info"))
+        {
+            auto infoArgs = parser.get<std::vector<std::string>>("--info");
+            displayPackageInfo(infoArgs[0]);
+        }
+
     } catch (const std::runtime_error &err) {
         std::cerr << err.what() << std::endl;
         std::cout << parser;
@@ -82,14 +88,19 @@ int uninstall(std::string package)
     return 0;
 }
 
-int getPackageInfo(std::string package)
+int displayPackageInfo(std::string package)
 {
-    std::cout << "ID: ";
-    std::cout << "Name: ";
-    std::cout << "Description: ";
-    std::cout << "Versions: ";
+    PackageInfo packageInfo = fetchPackageInfo(package, "1.0");
+    std::cout << "ID: " << packageInfo.id << std::endl;
+    std::cout << "Name: " << packageInfo.name << std::endl;
+    std::cout << "Description: " << packageInfo.description << std::endl;
+    std::cout << "Version: " << packageInfo.version << std::endl;
     std::cout << "Dependencies: ";
-    std::cout << "Files: ";
+    for (std::string dependency : packageInfo.dependencies)
+    {
+        std::cout << dependency << ", ";
+    }
+    std::cout << std::endl;
 
     return 0;
 }
@@ -109,7 +120,7 @@ int login(const std::string& username, const std::string& password)
 
     if(curl) {
         std::string readBuffer;
-        curl_easy_setopt(curl, CURLOPT_URL, "http://localhost:5000/login");
+        const char *const url = (server_address + "/login").c_str();
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         json payload = {{"username", username}, {"password", password}};
@@ -149,4 +160,44 @@ int login(const std::string& username, const std::string& password)
 
     curl_global_cleanup();
     return 0;
+}
+
+PackageInfo fetchPackageInfo(const std::string& package_name, const std::string& package_version)
+{
+    CURL* curl;
+    CURLcode res;
+    std::string readBuffer;
+    PackageInfo packageInfo;
+
+    curl = curl_easy_init();
+    if (curl)
+    {
+        std::string url = (server_address + "/packages/" + package_name + "/" + package_version + ".json");
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        curl_easy_cleanup(curl);
+
+        try {
+            auto jsonResponse = json::parse(readBuffer);
+            packageInfo.id = jsonResponse["id"];
+            packageInfo.name = jsonResponse["name"];
+            packageInfo.description = jsonResponse["description"];
+            packageInfo.version = jsonResponse["version"] ;
+            packageInfo.dependencies = jsonResponse["dependencies"];
+            packageInfo.files = jsonResponse["files"];
+
+        } catch (const json::parse_error& e) {
+            std::cerr << "JSON parse error: " << e.what() << std::endl;
+        }
+    }
+
+    return packageInfo;
 }

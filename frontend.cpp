@@ -1,6 +1,7 @@
 #include <iostream>
 #include "argparse/argparse.hpp"
 #include "frontend.h"
+#include <fstream>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
@@ -26,6 +27,10 @@ int main(int argc, char *argv[])
         .help("uninstalls a package")
         .nargs(1);
 
+    parser.add_argument("--fetch")
+        .help("fetch a packages file")
+        .nargs(4);
+
     parser.add_argument("--info")
         .help("get information about a package")
         .nargs(argparse::nargs_pattern::at_least_one);
@@ -49,6 +54,12 @@ int main(int argc, char *argv[])
         {
             auto uninstallArgs = parser.get<std::vector<std::string>>("--uninstall");
             uninstall(uninstallArgs[0]);
+        }
+
+        if (parser.present("--fetch"))
+        {
+            auto fetchArgs = parser.get<std::vector<std::string>>("--fetch");
+            fetchPackage(fetchArgs[0], fetchArgs[1], fetchArgs[2], fetchArgs[3]);
         }
 
         if (parser.present("--info"))
@@ -231,4 +242,31 @@ PackageInfo fetchPackageInfo(const std::string& package_name, const std::string&
     }
 
     return packageInfo;
+}
+
+int fetchPackage(const std::string& package_name, const std::string& package_version, const std::string& file, const std::string& output_file)
+{
+    CURL* curl;
+    CURLcode res;
+    std::string readBuffer;
+    PackageInfo packageInfo;
+
+    curl = curl_easy_init();
+    if (curl)
+    {
+        std::string url = (server_address + "/packages/" + package_name + "/" + package_version + "/" + file);
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        res = curl_easy_perform(curl);
+
+        if (res != CURLE_OK) {
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+        }
+
+        curl_easy_cleanup(curl);
+    }
+
+    return 0;
 }

@@ -103,14 +103,16 @@ int displayPackageInfo(std::string package)
     std::cout << "Description: " << packageInfo.description << std::endl;
     std::cout << "Version: " << packageInfo.version << std::endl;
     std::cout << "Dependencies: ";
-    for (std::string dependency : packageInfo.dependencies)
+    if (!packageInfo.dependencies.empty())
     {
-        std::cout << dependency << ", ";
+        std::copy(std::begin(packageInfo.dependencies), std::prev(std::end(packageInfo.dependencies)), std::ostream_iterator<std::string>(std::cout, ", "));
+        std::cout << packageInfo.dependencies.back();
     }
     std::cout << std::endl;
-    for (std::string file : packageInfo.files)
+    if (!packageInfo.files.empty())
     {
-        std::cout << file << ", ";
+        std::copy(std::begin(packageInfo.files), std::prev(std::end(packageInfo.files)), std::ostream_iterator<std::string>(std::cout, ", "));
+        std::cout << packageInfo.files.back();
     }
     std::cout << std::endl;
 

@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
         .nargs(1);
 
     parser.add_argument("--info")
-    .help("get information about a package")
-    .nargs(1);
+        .help("get information about a package")
+        .nargs(argparse::nargs_pattern::at_least_one);
 
     try
     {
@@ -54,7 +54,14 @@ int main(int argc, char *argv[])
         if (parser.present("--info"))
         {
             auto infoArgs = parser.get<std::vector<std::string>>("--info");
-            displayPackageInfo(infoArgs[0]);
+            if (infoArgs.size() == 1)
+            {
+                displayPackageInfo(infoArgs[0]);
+            }
+            else
+            {
+                displayPackageInfo(infoArgs[0], infoArgs[1]);
+            }
         }
 
     } catch (const std::runtime_error &err) {
@@ -90,7 +97,24 @@ int uninstall(std::string package)
 
 int displayPackageInfo(std::string package)
 {
-    PackageInfo packageInfo = fetchPackageInfo(package, "1.0");
+    PackageInfo packageInfo = fetchPackageInfo(package, "latest");
+    std::cout << "ID: " << packageInfo.id << std::endl;
+    std::cout << "Name: " << packageInfo.name << std::endl;
+    std::cout << "Description: " << packageInfo.description << std::endl;
+    std::cout << "Version: " << packageInfo.version << std::endl;
+    std::cout << "Dependencies: ";
+    for (std::string dependency : packageInfo.dependencies)
+    {
+        std::cout << dependency << ", ";
+    }
+    std::cout << std::endl;
+
+    return 0;
+}
+
+int displayPackageInfo(std::string package, std::string version)
+{
+    PackageInfo packageInfo = fetchPackageInfo(package, version);
     std::cout << "ID: " << packageInfo.id << std::endl;
     std::cout << "Name: " << packageInfo.name << std::endl;
     std::cout << "Description: " << packageInfo.description << std::endl;

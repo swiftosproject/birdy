@@ -4,6 +4,7 @@ int main(int argc, char *argv[]);
 int install(std::string package);
 int uninstall(std::string package);
 int displayPackageInfo(std::string package);
+int displayPackageInfo(std::string package, std::string version);
 struct PackageInfo {
     int id;
     std::string name;

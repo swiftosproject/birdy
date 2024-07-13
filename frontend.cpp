@@ -1,5 +1,7 @@
 #include <iostream>
 #include "argparse/argparse.hpp"
+// #include <curlpp/cURLpp.hpp>
+// #include <curlpp/Options.hpp>
 
 std::string root;
 
@@ -14,6 +16,27 @@ int install(std::string package)
     return 0;
 }
 
+int uninstall(std::string package)
+{
+    std::cout << "Uninstalling package " << package;
+    if(root != "")
+    {
+        std::cout << " from" << root << "\n";
+    }
+
+    return 0;
+}
+
+int getPackageInfo(std::string package)
+{
+    std::cout << "ID: ";
+    std::cout << "Name: ";
+    std::cout << "Description: ";
+    std::cout << "Versions: ";
+    std::cout << "Dependencies: ";
+    std::cout << "Files: ";
+}
+
 int main(int argc, char *argv[])
 {
     argparse::ArgumentParser parser("Birdy");
@@ -25,6 +48,14 @@ int main(int argc, char *argv[])
     parser.add_argument("-r", "--root")
         .help("sets the root where birdy will install packages")
         .nargs(1);
+
+    parser.add_argument("-u", "--uninstall")
+        .help("uninstalls a package")
+        .nargs(1);
+
+    parser.add_argument("--info")
+    .help("get information about a package")
+    .nargs(1);
 
     try
     {
@@ -38,8 +69,13 @@ int main(int argc, char *argv[])
         if (parser.present("--install"))
         {
             auto installArgs = parser.get<std::vector<std::string>>("--install");
-            std::string package = installArgs[0];
-            install(package);
+            install(installArgs[0]);
+        }
+
+        if (parser.present("--uninstall"))
+        {
+            auto uninstallArgs = parser.get<std::vector<std::string>>("--uninstall");
+            uninstall(uninstallArgs[0]);
         }
 
     } catch (const std::runtime_error &err) {

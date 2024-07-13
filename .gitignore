@@ -97,6 +97,9 @@ bld/
 birdy
 a.out
 
+# Cookies
+cookies.txt
+
 # Files built by Visual Studio
 *_i.c
 *_p.c

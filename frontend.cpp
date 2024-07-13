@@ -1,41 +1,10 @@
 #include <iostream>
 #include "argparse/argparse.hpp"
+#include "frontend.h"
 // #include <curlpp/cURLpp.hpp>
 // #include <curlpp/Options.hpp>
 
 std::string root;
-
-int install(std::string package)
-{
-    std::cout << "Installing package '" << package << "'";
-    if (root != "")
-    {
-        std::cout << " to '" << root << "'\n";
-    }
-
-    return 0;
-}
-
-int uninstall(std::string package)
-{
-    std::cout << "Uninstalling package " << package;
-    if(root != "")
-    {
-        std::cout << " from" << root << "\n";
-    }
-
-    return 0;
-}
-
-int getPackageInfo(std::string package)
-{
-    std::cout << "ID: ";
-    std::cout << "Name: ";
-    std::cout << "Description: ";
-    std::cout << "Versions: ";
-    std::cout << "Dependencies: ";
-    std::cout << "Files: ";
-}
 
 int main(int argc, char *argv[])
 {
@@ -83,6 +52,40 @@ int main(int argc, char *argv[])
         std::cout << parser;
         return 1;
     }
+
+    return 0;
+}
+
+int install(std::string package)
+{
+    std::cout << "Installing package '" << package << "'";
+    if (root != "")
+    {
+        std::cout << " to '" << root << "'\n";
+    }
+
+    return 0;
+}
+
+int uninstall(std::string package)
+{
+    std::cout << "Uninstalling package " << package;
+    if(root != "")
+    {
+        std::cout << " from" << root << "\n";
+    }
+
+    return 0;
+}
+
+int getPackageInfo(std::string package)
+{
+    std::cout << "ID: ";
+    std::cout << "Name: ";
+    std::cout << "Description: ";
+    std::cout << "Versions: ";
+    std::cout << "Dependencies: ";
+    std::cout << "Files: ";
 
     return 0;
 }

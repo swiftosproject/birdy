@@ -2,7 +2,7 @@ CXX = g++
 
 CXXFLAGS = -g -O0
 
-LIBS = -lcurl -ljsoncpp
+LIBS = -lcurl -ljsoncpp -larchive
 
 SRC = frontend.cpp
 TARGET = birdy

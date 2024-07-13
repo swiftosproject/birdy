@@ -4,6 +4,8 @@
 #include <fstream>
 #include <curl/curl.h>
 #include <nlohmann/json.hpp>
+#include <archive.h>
+#include <archive_entry.h>
 
 using json = nlohmann::json;
 
@@ -11,13 +13,17 @@ std::string root;
 std::string auth_token;
 std::string server_address = "http://localhost:5000";
 
+void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files);
+void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files);
+int copy_data(struct archive *ar, struct archive *aw);
+
 int main(int argc, char *argv[])
 {
     argparse::ArgumentParser parser("Birdy");
 
     parser.add_argument("-i", "--install")
         .help("installs a package")
-        .nargs(1);
+        .nargs(argparse::nargs_pattern::at_least_one);
 
     parser.add_argument("-r", "--root")
         .help("sets the root where birdy will install packages")
@@ -47,7 +53,14 @@ int main(int argc, char *argv[])
         if (parser.present("--install"))
         {
             auto installArgs = parser.get<std::vector<std::string>>("--install");
-            install(installArgs[0]);
+            if (installArgs.size() == 1)
+            {
+                install(installArgs[0]);
+            }
+            else
+            {
+                install(installArgs[0], installArgs[1]);
+            }
         }
 
         if (parser.present("--uninstall"))
@@ -74,8 +87,9 @@ int main(int argc, char *argv[])
                 displayPackageInfo(infoArgs[0], infoArgs[1]);
             }
         }
-
-    } catch (const std::runtime_error &err) {
+    }
+    catch (const std::runtime_error &err)
+    {
         std::cerr << err.what() << std::endl;
         std::cout << parser;
         return 1;
@@ -84,21 +98,31 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+int install(std::string package, std::string version)
+{
+    std::vector<std::string> extracted_files;
+    std::string archive_path = "/tmp/" + package + "-" + version + ".tar.gz";
+    PackageInfo packageInfo = fetchPackageInfo(package, "latest");
+    std::string file = packageInfo.files[0];
+    std::cout << "Fetching package: " << package << " version: " << version << std::endl;
+    fetchPackage(package, version, "usr.tar.gz", archive_path);
+    std::cout << "Extracting archive: " << archive_path << std::endl;
+    extract_archive(archive_path, root, extracted_files);
+    std::cout << "Writing file list: files.txt" << std::endl;
+    write_extracted_files_list("files.txt", extracted_files);
+    return 0;
+}
+
 int install(std::string package)
 {
-    std::cout << "Installing package '" << package << "'";
-    if (root != "")
-    {
-        std::cout << " to '" << root << "'\n";
-    }
-
-    return 0;
+    std::string version = fetchLatestVersion(package);
+    return install(package, version);
 }
 
 int uninstall(std::string package)
 {
     std::cout << "Uninstalling package " << package;
-    if(root != "")
+    if (root != "")
     {
         std::cout << " from" << root << "\n";
     }
@@ -120,6 +144,7 @@ int displayPackageInfo(std::string package)
         std::cout << packageInfo.dependencies.back();
     }
     std::cout << std::endl;
+    std::cout << "Files: ";
     if (!packageInfo.files.empty())
     {
         std::copy(std::begin(packageInfo.files), std::prev(std::end(packageInfo.files)), std::ostream_iterator<std::string>(std::cout, ", "));
@@ -147,20 +172,21 @@ int displayPackageInfo(std::string package, std::string version)
     return 0;
 }
 
-size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
+size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    ((std::string *)userp)->append((char *)contents, size * nmemb);
     return size * nmemb;
 }
 
-int login(const std::string& username, const std::string& password)
+int login(const std::string &username, const std::string &password)
 {
-    CURL* curl;
+    CURL *curl;
     CURLcode res;
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
 
-    if(curl) {
+    if (curl)
+    {
         std::string readBuffer;
         const char *const url = (server_address + "/login").c_str();
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
@@ -183,15 +209,21 @@ int login(const std::string& username, const std::string& password)
 
         res = curl_easy_perform(curl);
 
-        if(res != CURLE_OK) {
+        if (res != CURLE_OK)
+        {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        } else {
+        }
+        else
+        {
             long http_code = 0;
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-            if (http_code == 200) {
+            if (http_code == 200)
+            {
                 auth_token = readBuffer;
                 std::cout << "\033[32mLogin successful\033[0m" << std::endl;
-            } else {
+            }
+            else
+            {
                 std::cerr << "\033[31mLogin failed\033[0m" << std::endl;
             }
         }
@@ -204,9 +236,9 @@ int login(const std::string& username, const std::string& password)
     return 0;
 }
 
-PackageInfo fetchPackageInfo(const std::string& package_name, const std::string& package_version)
+PackageInfo fetchPackageInfo(const std::string &package_name, const std::string &package_version)
 {
-    CURL* curl;
+    CURL *curl;
     CURLcode res;
     std::string readBuffer;
     PackageInfo packageInfo;
@@ -221,22 +253,25 @@ PackageInfo fetchPackageInfo(const std::string& package_name, const std::string&
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
 
-        if (res != CURLE_OK) {
+        if (res != CURLE_OK)
+        {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
         }
 
         curl_easy_cleanup(curl);
 
-        try {
+        try
+        {
             auto jsonResponse = json::parse(readBuffer);
             packageInfo.id = jsonResponse["id"];
             packageInfo.name = jsonResponse["name"];
             packageInfo.description = jsonResponse["description"];
-            packageInfo.version = jsonResponse["version"] ;
+            packageInfo.version = jsonResponse["version"];
             packageInfo.dependencies = jsonResponse["dependencies"];
             packageInfo.files = jsonResponse["files"];
-
-        } catch (const json::parse_error& e) {
+        }
+        catch (const json::parse_error &e)
+        {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
         }
     }
@@ -244,29 +279,123 @@ PackageInfo fetchPackageInfo(const std::string& package_name, const std::string&
     return packageInfo;
 }
 
-int fetchPackage(const std::string& package_name, const std::string& package_version, const std::string& file, const std::string& output_file)
+int fetchPackage(const std::string &package_name, const std::string &package_version, const std::string &file, const std::string &output_file)
 {
-    CURL* curl;
+    CURL *curl;
     CURLcode res;
-    std::string readBuffer;
-    PackageInfo packageInfo;
+    FILE *fp = fopen(output_file.c_str(), "wb");
+    if (!fp)
+    {
+        std::cerr << "Failed to open file: " << output_file << std::endl;
+        return 1;
+    }
 
     curl = curl_easy_init();
     if (curl)
     {
         std::string url = (server_address + "/packages/" + package_name + "/" + package_version + "/" + file);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         res = curl_easy_perform(curl);
 
-        if (res != CURLE_OK) {
+        if (res != CURLE_OK)
+        {
             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+            fclose(fp);
+            return 1;
         }
 
         curl_easy_cleanup(curl);
     }
 
+    fclose(fp);
     return 0;
+}
+
+std::string fetchLatestVersion(const std::string& package_name)
+{
+    auto packageInfo = fetchPackageInfo(package_name, "latest");
+    return packageInfo.version;
+}
+
+void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files)
+{
+    struct archive *a;
+    struct archive *ext;
+    struct archive_entry *entry;
+    int r;
+
+    a = archive_read_new();
+    archive_read_support_format_all(a);
+    archive_read_support_compression_all(a);
+    ext = archive_write_disk_new();
+    archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME);
+    archive_write_disk_set_standard_lookup(ext);
+    if ((r = archive_read_open_filename(a, archive_path.c_str(), 10240)))
+    {
+        std::cerr << "Failed to open archive: " << archive_error_string(a) << std::endl;
+        return;
+    }
+
+    while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
+    {
+        const char *currentFile = archive_entry_pathname(entry);
+        std::string fullOutputPath = output_dir + "/" + currentFile;
+        archive_entry_set_pathname(entry, fullOutputPath.c_str());
+
+        extracted_files.push_back(fullOutputPath);
+
+        r = archive_write_header(ext, entry);
+        if (r != ARCHIVE_OK)
+        {
+            std::cerr << "archive_write_header() failed: " << archive_error_string(ext) << std::endl;
+        }
+        else
+        {
+            copy_data(a, ext);
+            r = archive_write_finish_entry(ext);
+            if (r != ARCHIVE_OK)
+            {
+                std::cerr << "archive_write_finish_entry() failed: " << archive_error_string(ext) << std::endl;
+            }
+        }
+    }
+
+    archive_read_close(a);
+    archive_read_free(a);
+    archive_write_close(ext);
+    archive_write_free(ext);
+}
+
+int copy_data(struct archive *ar, struct archive *aw)
+{
+    const void *buff;
+    size_t size;
+    la_int64_t offset;
+
+    for (;;)
+    {
+        int r = archive_read_data_block(ar, &buff, &size, &offset);
+        if (r == ARCHIVE_EOF)
+            return (ARCHIVE_OK);
+        if (r != ARCHIVE_OK)
+            return (r);
+        r = archive_write_data_block(aw, buff, size, offset);
+        if (r != ARCHIVE_OK)
+        {
+            std::cerr << "archive_write_data_block() failed: " << archive_error_string(aw) << std::endl;
+            return (r);
+        }
+    }
+}
+
+void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files)
+{
+    std::ofstream outfile(list_path);
+    for (const auto &file : extracted_files)
+    {
+        outfile << file << std::endl;
+    }
 }

@@ -108,6 +108,11 @@ int displayPackageInfo(std::string package)
         std::cout << dependency << ", ";
     }
     std::cout << std::endl;
+    for (std::string file : packageInfo.files)
+    {
+        std::cout << file << ", ";
+    }
+    std::cout << std::endl;
 
     return 0;
 }

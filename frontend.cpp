@@ -13,10 +13,6 @@ std::string root;
 std::string auth_token;
 std::string server_address = "http://localhost:5000";
 
-void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files);
-void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files);
-int copy_data(struct archive *ar, struct archive *aw);
-
 int main(int argc, char *argv[])
 {
     argparse::ArgumentParser parser("Birdy");
@@ -320,6 +316,28 @@ std::string fetchLatestVersion(const std::string& package_name)
     return packageInfo.version;
 }
 
+int copy_data(struct archive *ar, struct archive *aw)
+{
+    const void *buff;
+    size_t size;
+    la_int64_t offset;
+
+    for (;;)
+    {
+        int r = archive_read_data_block(ar, &buff, &size, &offset);
+        if (r == ARCHIVE_EOF)
+            return (ARCHIVE_OK);
+        if (r != ARCHIVE_OK)
+            return (r);
+        r = archive_write_data_block(aw, buff, size, offset);
+        if (r != ARCHIVE_OK)
+        {
+            std::cerr << "archive_write_data_block() failed: " << archive_error_string(aw) << std::endl;
+            return (r);
+        }
+    }
+}
+
 void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files)
 {
     struct archive *a;
@@ -342,7 +360,12 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
         const char *currentFile = archive_entry_pathname(entry);
-        std::string fullOutputPath = output_dir + "/" + currentFile;
+        std::string fullOutputPath = output_dir;
+        if (fullOutputPath.back() != '/')
+        {
+            fullOutputPath += "/";
+        }
+        fullOutputPath += currentFile;
         archive_entry_set_pathname(entry, fullOutputPath.c_str());
 
         extracted_files.push_back(fullOutputPath);
@@ -367,28 +390,6 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     archive_read_free(a);
     archive_write_close(ext);
     archive_write_free(ext);
-}
-
-int copy_data(struct archive *ar, struct archive *aw)
-{
-    const void *buff;
-    size_t size;
-    la_int64_t offset;
-
-    for (;;)
-    {
-        int r = archive_read_data_block(ar, &buff, &size, &offset);
-        if (r == ARCHIVE_EOF)
-            return (ARCHIVE_OK);
-        if (r != ARCHIVE_OK)
-            return (r);
-        r = archive_write_data_block(aw, buff, size, offset);
-        if (r != ARCHIVE_OK)
-        {
-            std::cerr << "archive_write_data_block() failed: " << archive_error_string(aw) << std::endl;
-            return (r);
-        }
-    }
 }
 
 void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files)

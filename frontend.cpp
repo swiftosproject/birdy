@@ -11,8 +11,8 @@
 using json = nlohmann::json;
 
 std::string root;
-std::string auth_token;
-std::string server_address = "http://localhost:5000";
+std::string authToken;
+std::string serverAdress = "http://localhost:5000";
 
 int main(int argc, char *argv[])
 {
@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
     parser.add_argument("--info")
         .help("get information about a package")
         .nargs(argparse::nargs_pattern::at_least_one);
+
+    parser.add_argument("--server")
+        .help("change the birdy server")
+        .nargs(1);
 
     try
     {
@@ -83,6 +87,12 @@ int main(int argc, char *argv[])
             {
                 displayPackageInfo(infoArgs[0], infoArgs[1]);
             }
+        }
+        
+        if (parser.present("--server"))
+        {
+            auto serverArgs = parser.get<std::vector<std::string>>("--server");
+            serverAdress = serverArgs[0];
         }
     }
     catch (const std::runtime_error &err)
@@ -185,7 +195,7 @@ int login(const std::string &username, const std::string &password)
     if (curl)
     {
         std::string readBuffer;
-        const char *const url = (server_address + "/login").c_str();
+        const char *const url = (serverAdress + "/login").c_str();
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         json payload = {{"username", username}, {"password", password}};
@@ -216,7 +226,7 @@ int login(const std::string &username, const std::string &password)
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (http_code == 200)
             {
-                auth_token = readBuffer;
+                authToken = readBuffer;
                 std::cout << "\033[32mLogin successful\033[0m" << std::endl;
             }
             else
@@ -243,7 +253,7 @@ PackageInfo fetchPackageInfo(const std::string &package_name, const std::string 
     curl = curl_easy_init();
     if (curl)
     {
-        std::string url = (server_address + "/packages/" + package_name + "/" + package_version + ".json");
+        std::string url = (serverAdress + "/packages/" + package_name + "/" + package_version + ".json");
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
@@ -315,7 +325,7 @@ int fetchPackage(const std::string &package_name, const std::string &package_ver
     curl = curl_easy_init();
     if (curl)
     {
-        std::string url = (server_address + "/packages/" + package_name + "/" + package_version + "/" + file);
+        std::string url = (serverAdress + "/packages/" + package_name + "/" + package_version + "/" + file);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);

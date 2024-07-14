@@ -310,7 +310,7 @@ int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double 
     int dotz = (int) round(fractiondownloaded * totaldotz);
 
     int ii = 0;
-    printf("\r%3.0f%% [", fractiondownloaded * 100);
+    printf("\r%.0f%%[", fractiondownloaded * 100);
     for (; ii < dotz; ii++) {
         printf("=");
     }
@@ -322,7 +322,8 @@ int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double 
     std::string nowDownloadedStr = formatSize(NowDownloaded);
     std::string totalToDownloadStr = formatSize(TotalToDownload);
 
-    printf(" %s/%s", nowDownloadedStr.c_str(), totalToDownloadStr.c_str());
+    printf("%s/%s", nowDownloadedStr.c_str(), totalToDownloadStr.c_str());
+    printf("\033[K");
     fflush(stdout);
     return 0;
 }

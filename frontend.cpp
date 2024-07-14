@@ -286,9 +286,20 @@ PackageInfo fetchPackageInfo(const std::string &package_name, const std::string 
     return packageInfo;
 }
 
+std::string formatSize(double size) {
+    const char* suffixes[] = {"B", "KB", "MB", "GB"};
+    int suffixIndex = 0;
+    while (size >= 1024 && suffixIndex < 3) {
+        size /= 1024;
+        suffixIndex++;
+    }
+    char buffer[50];
+    snprintf(buffer, sizeof(buffer), "%.2f %s", size, suffixes[suffixIndex]);
+    return std::string(buffer);
+}
 
-int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded)
-{
+
+int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded) {
     // credits: https://stackoverflow.com/a/1639047
     if (TotalToDownload <= 0.0) {
         return 0;
@@ -307,8 +318,13 @@ int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double 
         printf(" ");
     }
     printf("]");
+
+    std::string nowDownloadedStr = formatSize(NowDownloaded);
+    std::string totalToDownloadStr = formatSize(TotalToDownload);
+
+    printf(" %s/%s", nowDownloadedStr.c_str(), totalToDownloadStr.c_str());
     fflush(stdout);
-    return 0; 
+    return 0;
 }
 
 int fetchPackage(const std::string &package_name, const std::string &package_version, const std::string &file, const std::string &output_file)

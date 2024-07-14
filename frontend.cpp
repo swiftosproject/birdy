@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <archive.h>
 #include <archive_entry.h>
+#include <math.h>   
 
 using json = nlohmann::json;
 
@@ -102,7 +103,7 @@ int install(std::string package, std::string version)
     std::string file = packageInfo.files[0];
     std::cout << "Fetching package: " << package << " version: " << version << std::endl;
     fetchPackage(package, version, packageInfo.files[0], archive_path);
-    std::cout << "Extracting archive: " << archive_path << std::endl;
+    std::cout << "\nExtracting archive: " << archive_path << std::endl;
     extract_archive(archive_path, root, extracted_files);
     std::cout << "Writing file list: files.txt" << std::endl;
     write_extracted_files_list("files.txt", extracted_files);
@@ -275,6 +276,31 @@ PackageInfo fetchPackageInfo(const std::string &package_name, const std::string 
     return packageInfo;
 }
 
+
+int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded)
+{
+    // credits: https://stackoverflow.com/a/1639047
+    if (TotalToDownload <= 0.0) {
+        return 0;
+    }
+
+    int totaldotz = 40;
+    double fractiondownloaded = NowDownloaded / TotalToDownload;
+    int dotz = (int) round(fractiondownloaded * totaldotz);
+
+    int ii = 0;
+    printf("\r%3.0f%% [", fractiondownloaded * 100);
+    for (; ii < dotz; ii++) {
+        printf("=");
+    }
+    for (; ii < totaldotz; ii++) {
+        printf(" ");
+    }
+    printf("]");
+    fflush(stdout);
+    return 0; 
+}
+
 int fetchPackage(const std::string &package_name, const std::string &package_version, const std::string &file, const std::string &output_file)
 {
     CURL *curl;
@@ -294,6 +320,10 @@ int fetchPackage(const std::string &package_name, const std::string &package_ver
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progressBar);
+
         res = curl_easy_perform(curl);
 
         if (res != CURLE_OK)

@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 int install(std::string package, std::string version)
 {
     std::vector<std::string> extracted_files;
-    PackageInfo packageInfo = fetchPackageInfo(package, "latest");
+    PackageInfo packageInfo = fetchPackageInfo(package, version);
     std::string archive_path = "/tmp/" + packageInfo.files[0];
     std::string file = packageInfo.files[0];
     std::cout << "Fetching package: " << package << " version: " << version << std::endl;

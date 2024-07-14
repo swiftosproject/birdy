@@ -347,6 +347,7 @@ int fetchPackage(const std::string &package_name, const std::string &package_ver
     }
 
     fclose(fp);
+    std::cout << std::endl;
     return 0;
 }
 

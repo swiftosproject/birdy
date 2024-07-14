@@ -105,7 +105,7 @@ int install(std::string package, std::string version)
     PackageInfo packageInfo = fetchPackageInfo(package, "latest");
     std::string file = packageInfo.files[0];
     std::cout << "Fetching package: " << package << " version: " << version << std::endl;
-    fetchPackage(package, version, "usr.tar.gz", archive_path);
+    fetchPackage(package, version, packageInfo.files[0], archive_path);
     std::cout << "Extracting archive: " << archive_path << std::endl;
     extract_archive(archive_path, root, extracted_files);
     std::cout << "Writing file list: files.txt" << std::endl;

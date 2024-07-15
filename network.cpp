@@ -107,7 +107,7 @@ PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &
         }
         catch (const nlohmann::json::parse_error &e)
         {
-            std::cerr << "nlohmann::json parse error: " << e.what() << std::endl;
+            std::cerr << "Json parse error: " << e.what() << std::endl;
         }
     }
 

@@ -21,4 +21,8 @@ run: $(TARGET)
 clean:
 	rm -f $(TARGET)
 
+install:
+	cp birdy /usr/bin/birdy
+	chmod +x /usr/bin/birdy
+
 .PHONY: all chmod run clean

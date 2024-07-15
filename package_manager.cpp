@@ -68,7 +68,7 @@ int uninstall(std::string package)
     }
     std::vector<std::string> files = getPackageFiles(packageListPath, package);
 
-    // Remove all files related to the package and remove it from installed packages list
+    // Remove all files related to the package
     for (std::string file : files)
     {
         try
@@ -83,6 +83,8 @@ int uninstall(std::string package)
             std::cout << "Filesystem error: " << err.what() << '\n';
         }
     }
+
+    // TODO Remove it from installed packages list
 
     return 0;
 }
@@ -173,7 +175,7 @@ PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &
         }
         catch (const nlohmann::json::parse_error &e)
         {
-            std::cerr << "nlohmann::json parse error: " << e.what() << std::endl;
+            std::cerr << "Json parse error: " << e.what() << std::endl;
         }
     }
 

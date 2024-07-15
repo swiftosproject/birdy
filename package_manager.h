@@ -22,6 +22,7 @@ int displayPackageInfo(std::string package);
 int displayPackageInfo(std::string package, std::string version);
 bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion);
 bool isPackageInstalled(const std::string &listPath, const std::string &packageName);
+int removePackage(const std::string &packageName);
 std::string fetchLatestVersion(const std::string &packageName);
 PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &packageVersion);
 

@@ -152,10 +152,31 @@ int install(std::string package)
 
 int uninstall(std::string package)
 {
-    std::cout << "Uninstalling package " << package;
-    if (root != "")
+    std::string packageListPath = root + "etc/birdy/packages.json";
+
+    // Check if package is installed
+    bool installed = isPackageInstalled(packageListPath, package);
+    if (!installed)
     {
-        std::cout << " from" << root << "\n";
+        std::cout << "Package is not installed!" << std::endl;
+        return 2;
+    }
+    std::vector<std::string> files = getPackageFiles(packageListPath, package);
+
+    // Remove all files related to the package and remove it from installed packages list
+    for (std::string file : files)
+    {
+        try
+        {
+            if (std::filesystem::remove(file))
+                std::cout << "File " << file << " deleted.\n";
+            else
+                std::cout << "File " << file << " not found.\n";
+        }
+        catch (const std::filesystem::filesystem_error &err)
+        {
+            std::cout << "Filesystem error: " << err.what() << '\n';
+        }
     }
 
     return 0;
@@ -455,7 +476,10 @@ void extractArchive(const std::string &archivePath, const std::string &outputDir
         fullOutputPath += currentFile;
         archive_entry_set_pathname(entry, fullOutputPath.c_str());
 
-        extractedFiles.push_back(fullOutputPath);
+        if (archive_entry_filetype(entry) == AE_IFREG)
+        {
+            extractedFiles.push_back(fullOutputPath);
+        }
 
         r = archive_write_header(ext, entry);
         if (r != ARCHIVE_OK)
@@ -489,12 +513,12 @@ void writeExtractedFilesList(const std::string &listPath, const std::vector<std:
         infile.close();
     }
 
-    json package_info;
-    package_info["name"] = packageName;
-    package_info["version"] = packageVersion;
-    package_info["files"] = extractedFiles;
+    json packageInfo;
+    packageInfo["name"] = packageName;
+    packageInfo["version"] = packageVersion;
+    packageInfo["files"] = extractedFiles;
 
-    j.push_back(package_info);
+    j.push_back(packageInfo);
 
     std::ofstream outfile(listPath);
     if (outfile.is_open())
@@ -508,34 +532,58 @@ void writeExtractedFilesList(const std::string &listPath, const std::vector<std:
     }
 }
 
-bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion)
+
+bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion) {
+    json j;
+    std::ifstream infile(listPath);
+    if (!infile.is_open()) {
+        std::cerr << "Could not open file for reading: " << listPath << std::endl;
+        return false;
+    }
+
+    infile >> j;
+
+    for (const auto &packageInfo : j) {
+        if (packageInfo["name"] == packageName && (packageVersion == "_any" || packageInfo["version"] == packageVersion)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool isPackageInstalled(const std::string &listPath, const std::string &packageName)
+{
+    return isPackageInstalled(listPath, packageName, "_any");
+}
+
+std::vector<std::string> getPackageFiles(const std::string &listPath, std::string packageName)
 {
     json j;
     std::ifstream infile(listPath);
-    
+
     if (infile.is_open())
     {
-        try {
+        try
+        {
             infile >> j;
-        } catch (const json::parse_error &e) {
+        }
+        catch (const json::parse_error &e)
+        {
             std::cerr << "JSON parse error: " << e.what() << std::endl;
-            return false;
         }
         infile.close();
     }
     else
     {
         std::cerr << "Could not open file for reading: " << listPath << std::endl;
-        return false;
     }
 
-    for (const auto &package_info : j)
+    for (const auto &packageInfo : j)
     {
-        if (package_info["name"] == packageName && package_info["version"] == packageVersion)
+        if (packageInfo["name"] == packageName)
         {
-            return true;
+            return packageInfo["files"];
         }
     }
-
-    return false;
 }

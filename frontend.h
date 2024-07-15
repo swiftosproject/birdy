@@ -25,3 +25,5 @@ void extractArchive(const std::string &archivePath, const std::string &outputDir
 int copyData(struct archive *ar, struct archive *aw);
 void writeExtractedFilesList(const std::string &listPath, const std::vector<std::string> &extractedFiles, std::string packageName, std::string packageVersion);
 bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion);
+bool isPackageInstalled(const std::string &listPath, const std::string &packageName);
+std::vector<std::string> getPackageFiles(const std::string &listPath, std::string packageName);

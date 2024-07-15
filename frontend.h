@@ -16,11 +16,12 @@ struct PackageInfo {
 };
 size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
 int login(const std::string& username, const std::string& password);
-PackageInfo fetchPackageInfo(const std::string& package_name, const std::string& package_version);
+PackageInfo fetchPackageInfo(const std::string& packageName, const std::string& packageVersion);
 std::string formatSize(double size);
 int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded);
-int fetchPackage(const std::string& package_name, const std::string& package_version, const std::string& file, const std::string& output_file);
-std::string fetchLatestVersion(const std::string& package_name);
-void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files);
-int copy_data(struct archive *ar, struct archive *aw);
-void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files, std::string package_name, std::string version);
+int fetchPackage(const std::string& packageName, const std::string& packageVersion, const std::string& file, const std::string& outputFile);
+std::string fetchLatestVersion(const std::string& packageName);
+void extractArchive(const std::string &archivePath, const std::string &outputDir, std::vector<std::string> &extractedFiles);
+int copyData(struct archive *ar, struct archive *aw);
+void writeExtractedFilesList(const std::string &listPath, const std::vector<std::string> &extractedFiles, std::string packageName, std::string packageVersion);
+bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion);

@@ -111,21 +111,36 @@ int main(int argc, char *argv[])
 
 int install(std::string package, std::string version)
 {
+    // Get package information
     std::cout << "Fetching package information...";
-    std::vector<std::string> extracted_files;
+    std::vector<std::string> extractedFiles;
     PackageInfo packageInfo = fetchPackageInfo(package, version);
     std::string archivePath = "/tmp/" + packageInfo.files[0];
     std::string file = packageInfo.files[0];
+    std::string packageListPath = root + "etc/birdy/packages.json";
     std::cout << "done" << std::endl;
+
+    // Check if package is already installer
+    bool installed = isPackageInstalled(packageListPath, package, version);
+    if (installed)
+    {
+        std::cout << "Package is already installed!" << std::endl;
+        return 2;
+    }
+
+    // Download package
     std::cout << "Retrieving packages..." << std::endl;
     fetchPackage(package, version, packageInfo.files[0], archivePath);
+
+    // Extract archive
     std::cout << "Extracting archive...";
-    extract_archive(archivePath, root, extracted_files);
+    extractArchive(archivePath, root, extractedFiles);
     std::cout << "done" << std::endl;
+
+    // Update package list
     std::cout << "Updating package list...";
-    std::string packageListPath = root + "etc/birdy/packages.json";
-    write_extracted_files_list("/etc/birdy/packages.json", extracted_files, package, version);
-    std::cout << "done";
+    writeExtractedFilesList(packageListPath, extractedFiles, package, version);
+    std::cout << "done" << std::endl;
     return 0;
 }
 
@@ -252,7 +267,7 @@ int login(const std::string &username, const std::string &password)
     return 0;
 }
 
-PackageInfo fetchPackageInfo(const std::string &package_name, const std::string &package_version)
+PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &packageVersion)
 {
     CURL *curl;
     CURLcode res;
@@ -262,7 +277,7 @@ PackageInfo fetchPackageInfo(const std::string &package_name, const std::string 
     curl = curl_easy_init();
     if (curl)
     {
-        std::string url = (serverAddress + "/packages/" + package_name + "/" + package_version + ".json");
+        std::string url = (serverAddress + "/packages/" + packageName + "/" + packageVersion + ".json");
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
@@ -342,21 +357,21 @@ int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double 
     return 0;
 }
 
-int fetchPackage(const std::string &package_name, const std::string &package_version, const std::string &file, const std::string &output_file)
+int fetchPackage(const std::string &packageName, const std::string &packageVersion, const std::string &file, const std::string &outputFile)
 {
     CURL *curl;
     CURLcode res;
-    FILE *fp = fopen(output_file.c_str(), "wb");
+    FILE *fp = fopen(outputFile.c_str(), "wb");
     if (!fp)
     {
-        std::cerr << "Failed to open file: " << output_file << std::endl;
+        std::cerr << "Failed to open file: " << outputFile << std::endl;
         return 1;
     }
 
     curl = curl_easy_init();
     if (curl)
     {
-        std::string url = (serverAddress + "/packages/" + package_name + "/" + package_version + "/" + file);
+        std::string url = (serverAddress + "/packages/" + packageName + "/" + packageVersion + "/" + file);
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
@@ -382,13 +397,13 @@ int fetchPackage(const std::string &package_name, const std::string &package_ver
     return 0;
 }
 
-std::string fetchLatestVersion(const std::string &package_name)
+std::string fetchLatestVersion(const std::string &packageName)
 {
-    auto packageInfo = fetchPackageInfo(package_name, "latest");
+    auto packageInfo = fetchPackageInfo(packageName, "latest");
     return packageInfo.version;
 }
 
-int copy_data(struct archive *ar, struct archive *aw)
+int copyData(struct archive *ar, struct archive *aw)
 {
     const void *buff;
     size_t size;
@@ -410,7 +425,7 @@ int copy_data(struct archive *ar, struct archive *aw)
     }
 }
 
-void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files)
+void extractArchive(const std::string &archivePath, const std::string &outputDir, std::vector<std::string> &extractedFiles)
 {
     struct archive *a;
     struct archive *ext;
@@ -423,7 +438,7 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     ext = archive_write_disk_new();
     archive_write_disk_set_options(ext, ARCHIVE_EXTRACT_TIME);
     archive_write_disk_set_standard_lookup(ext);
-    if ((r = archive_read_open_filename(a, archive_path.c_str(), 10240)))
+    if ((r = archive_read_open_filename(a, archivePath.c_str(), 10240)))
     {
         std::cerr << "Failed to open archive: " << archive_error_string(a) << std::endl;
         return;
@@ -432,7 +447,7 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     while (archive_read_next_header(a, &entry) == ARCHIVE_OK)
     {
         const char *currentFile = archive_entry_pathname(entry);
-        std::string fullOutputPath = output_dir;
+        std::string fullOutputPath = outputDir;
         if (!fullOutputPath.empty() && fullOutputPath[fullOutputPath.size() - 1] != '/')
         {
             fullOutputPath += "/";
@@ -440,7 +455,7 @@ void extract_archive(const std::string &archive_path, const std::string &output_
         fullOutputPath += currentFile;
         archive_entry_set_pathname(entry, fullOutputPath.c_str());
 
-        extracted_files.push_back(fullOutputPath);
+        extractedFiles.push_back(fullOutputPath);
 
         r = archive_write_header(ext, entry);
         if (r != ARCHIVE_OK)
@@ -449,7 +464,7 @@ void extract_archive(const std::string &archive_path, const std::string &output_
         }
         else
         {
-            copy_data(a, ext);
+            copyData(a, ext);
             r = archive_write_finish_entry(ext);
             if (r != ARCHIVE_OK)
             {
@@ -464,10 +479,10 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     archive_write_free(ext);
 }
 
-void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files, std::string package_name, std::string version)
+void writeExtractedFilesList(const std::string &listPath, const std::vector<std::string> &extractedFiles, std::string packageName, std::string packageVersion)
 {
     json j;
-    std::ifstream infile(list_path);
+    std::ifstream infile(listPath);
     if (infile.is_open())
     {
         infile >> j;
@@ -475,13 +490,13 @@ void write_extracted_files_list(const std::string &list_path, const std::vector<
     }
 
     json package_info;
-    package_info["package_name"] = package_name;
-    package_info["version"] = version;
-    package_info["extracted_files"] = extracted_files;
+    package_info["name"] = packageName;
+    package_info["version"] = packageVersion;
+    package_info["files"] = extractedFiles;
 
     j.push_back(package_info);
 
-    std::ofstream outfile(list_path);
+    std::ofstream outfile(listPath);
     if (outfile.is_open())
     {
         outfile << j.dump(4);
@@ -489,6 +504,38 @@ void write_extracted_files_list(const std::string &list_path, const std::vector<
     }
     else
     {
-        std::cerr << "Could not open file for writing: " << list_path << std::endl;
+        std::cerr << "Could not open file for writing: " << listPath << std::endl;
     }
+}
+
+bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion)
+{
+    json j;
+    std::ifstream infile(listPath);
+    
+    if (infile.is_open())
+    {
+        try {
+            infile >> j;
+        } catch (const json::parse_error &e) {
+            std::cerr << "JSON parse error: " << e.what() << std::endl;
+            return false;
+        }
+        infile.close();
+    }
+    else
+    {
+        std::cerr << "Could not open file for reading: " << listPath << std::endl;
+        return false;
+    }
+
+    for (const auto &package_info : j)
+    {
+        if (package_info["name"] == packageName && package_info["version"] == packageVersion)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }

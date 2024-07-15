@@ -111,6 +111,7 @@ int main(int argc, char *argv[])
 
 int install(std::string package, std::string version)
 {
+    std::cout << "Installing " << package;
     // Get package information
     std::cout << "Fetching package information...";
     std::vector<std::string> extractedFiles;
@@ -126,6 +127,13 @@ int install(std::string package, std::string version)
     {
         std::cout << "Package is already installed!" << std::endl;
         return 2;
+    }
+
+    // Install dependencies
+    std::cout << "Resolving dependencies..." << std::endl;
+    for (std::string dependency : packageInfo.dependencies)
+    {
+        install(dependency);
     }
 
     // Download package

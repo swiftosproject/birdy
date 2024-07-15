@@ -121,11 +121,11 @@ int install(std::string package, std::string version)
     std::string packageListPath = root + "etc/birdy/packages.json";
     std::cout << "done" << std::endl;
 
-    // Check if package is already installer
+    // Check if this version is already installed
     bool installed = isPackageInstalled(packageListPath, package, version);
     if (installed)
     {
-        std::cout << "Package is already installed!" << std::endl;
+        std::cout << "Already up to date!" << std::endl;
         return 2;
     }
 

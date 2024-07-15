@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 
 int install(std::string package, std::string version)
 {
-    std::cout << "Installing " << package;
+    std::cout << "Installing " << package << std::endl;
     // Get package information
     std::cout << "Fetching package information...";
     std::vector<std::string> extractedFiles;
@@ -149,6 +149,7 @@ int install(std::string package, std::string version)
     std::cout << "Updating package list...";
     writeExtractedFilesList(packageListPath, extractedFiles, package, version);
     std::cout << "done" << std::endl;
+    std::cout << "Succesfully installed " << package << "!" << std::endl;
     return 0;
 }
 

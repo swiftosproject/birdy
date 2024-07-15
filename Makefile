@@ -4,7 +4,7 @@ CXXFLAGS = -g -O0
 
 LIBS = -lcurl -ljsoncpp -larchive
 
-SRC = frontend.cpp
+SRC = main.cpp archive_manager.cpp network.cpp package_manager.cpp utils.cpp
 TARGET = birdy
 
 all: $(TARGET)

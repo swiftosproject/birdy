@@ -4,6 +4,8 @@
 #include "network.h"
 #include "utils.h"
 
+std::string root;
+
 int main(int argc, char *argv[])
 {
     argparse::ArgumentParser parser("Birdy");
@@ -35,7 +37,58 @@ int main(int argc, char *argv[])
     try
     {
         parser.parse_args(argc, argv);
-        parseArguments(parser);
+        if (parser.present("--root"))
+        {
+            root = parser.get<std::string>("--root");
+            if (root[root.size() - 1] != '/')
+            {
+                root += "/";
+            }
+        }
+
+        if (parser.present("--server"))
+        {
+            auto serverArgs = parser.get<std::vector<std::string>>("--server");
+            serverAddress = serverArgs[0];
+        }
+
+        if (parser.present("--install"))
+        {
+            auto installArgs = parser.get<std::vector<std::string>>("--install");
+            if (installArgs.size() == 1)
+            {
+                install(installArgs[0]);
+            }
+            else
+            {
+                install(installArgs[0], installArgs[1]);
+            }
+        }
+
+        if (parser.present("--uninstall"))
+        {
+            auto uninstallArgs = parser.get<std::vector<std::string>>("--uninstall");
+            uninstall(uninstallArgs[0]);
+        }
+
+        if (parser.present("--fetch"))
+        {
+            auto fetchArgs = parser.get<std::vector<std::string>>("--fetch");
+            fetchPackage(fetchArgs[0], fetchArgs[1], fetchArgs[2], fetchArgs[3]);
+        }
+
+        if (parser.present("--info"))
+        {
+            auto infoArgs = parser.get<std::vector<std::string>>("--info");
+            if (infoArgs.size() == 1)
+            {
+                displayPackageInfo(infoArgs[0]);
+            }
+            else
+            {
+                displayPackageInfo(infoArgs[0], infoArgs[1]);
+            }
+        }
     }
     catch (const std::runtime_error &err)
     {

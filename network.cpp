@@ -4,8 +4,8 @@
 #include "utils.h"
 #include <nlohmann/json.hpp>
 
-extern std::string serverAddress;
-extern std::string authToken;
+std::string serverAddress;
+std::string authToken;
 
 size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
 {

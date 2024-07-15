@@ -7,8 +7,7 @@
 #include "network.h"
 #include "utils.h"
 #include "archive_manager.h"
-
-extern std::string root;
+#include "main.h"
 
 int install(std::string package, std::string version)
 {
@@ -112,74 +111,6 @@ int displayPackageInfo(std::string package)
 {
     displayPackageInfo(package, "latest");
     return 0;
-}
-
-// Checks if package is installed
-bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion) {
-    nlohmann::json j;
-    std::ifstream infile(listPath);
-    if (!infile.is_open()) {
-        std::cerr << "Could not open file for reading: " << listPath << std::endl;
-        return false;
-    }
-
-    infile >> j;
-
-    for (const auto &packageInfo : j) {
-        if (packageInfo["name"] == packageName && (packageVersion == "_any" || packageInfo["version"] == packageVersion)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-// Calls isPackageInstalled with no version checking
-bool isPackageInstalled(const std::string &listPath, const std::string &packageName)
-{
-    return isPackageInstalled(listPath, packageName, "_any");
-}
-
-PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &packageVersion)
-{
-    CURL *curl;
-    CURLcode res;
-    std::string readBuffer;
-    PackageInfo packageInfo;
-
-    curl = curl_easy_init();
-    if (curl)
-    {
-        std::string url = (serverAddress + "/packages/" + packageName + "/" + packageVersion + ".nlohmann::json");
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        res = curl_easy_perform(curl);
-
-        if (res != CURLE_OK)
-        {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        }
-
-        curl_easy_cleanup(curl);
-
-        try
-        {
-            auto jsonResponse = nlohmann::json::parse(readBuffer);
-            packageInfo.id = jsonResponse["id"];
-            packageInfo.name = jsonResponse["name"];
-            packageInfo.description = jsonResponse["description"];
-            packageInfo.version = jsonResponse["version"];
-            packageInfo.dependencies = jsonResponse["dependencies"];
-            packageInfo.files = jsonResponse["files"];
-        }
-        catch (const nlohmann::json::parse_error &e)
-        {
-            std::cerr << "Json parse error: " << e.what() << std::endl;
-        }
-    }
-
-    return packageInfo;
 }
 
 std::string fetchLatestVersion(const std::string &packageName)

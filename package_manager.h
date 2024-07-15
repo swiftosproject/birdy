@@ -4,8 +4,6 @@
 #include <string>
 #include <vector>
 
-extern std::string root;
-
 struct PackageInfo {
     std::string id;
     std::string name;

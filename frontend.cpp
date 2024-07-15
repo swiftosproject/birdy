@@ -6,11 +6,11 @@
 #include <nlohmann/json.hpp>
 #include <archive.h>
 #include <archive_entry.h>
-#include <math.h>   
+#include <math.h>
 
 using json = nlohmann::json;
 
-std::string root;
+std::string root = "/";
 std::string authToken;
 std::string serverAddress = "http://localhost:5000";
 
@@ -49,6 +49,10 @@ int main(int argc, char *argv[])
         if (parser.present("--root"))
         {
             root = parser.get<std::string>("--root");
+            if (root[root.size() - 1] != '/')
+            {
+                root += "/";
+            }
         }
 
         if (parser.present("--server"))
@@ -107,16 +111,21 @@ int main(int argc, char *argv[])
 
 int install(std::string package, std::string version)
 {
+    std::cout << "Fetching package information...";
     std::vector<std::string> extracted_files;
     PackageInfo packageInfo = fetchPackageInfo(package, version);
-    std::string archive_path = "/tmp/" + packageInfo.files[0];
+    std::string archivePath = "/tmp/" + packageInfo.files[0];
     std::string file = packageInfo.files[0];
-    std::cout << "Fetching package: " << package << " version: " << version << std::endl;
-    fetchPackage(package, version, packageInfo.files[0], archive_path);
-    std::cout << "\nExtracting archive: " << archive_path << std::endl;
-    extract_archive(archive_path, root, extracted_files);
-    std::cout << "Writing file list: files.txt" << std::endl;
-    write_extracted_files_list("files.txt", extracted_files);
+    std::cout << "done" << std::endl;
+    std::cout << "Retrieving packages..." << std::endl;
+    fetchPackage(package, version, packageInfo.files[0], archivePath);
+    std::cout << "Extracting archive...";
+    extract_archive(archivePath, root, extracted_files);
+    std::cout << "done" << std::endl;
+    std::cout << "Updating package list...";
+    std::string packageListPath = root + "etc/birdy/packages.json";
+    write_extracted_files_list("/etc/birdy/packages.json", extracted_files, package, version);
+    std::cout << "done";
     return 0;
 }
 
@@ -286,10 +295,12 @@ PackageInfo fetchPackageInfo(const std::string &package_name, const std::string 
     return packageInfo;
 }
 
-std::string formatSize(double size) {
-    const char* suffixes[] = {"B", "KB", "MB", "GB"};
+std::string formatSize(double size)
+{
+    const char *suffixes[] = {"B", "KB", "MB", "GB"};
     int suffixIndex = 0;
-    while (size >= 1024 && suffixIndex < 3) {
+    while (size >= 1024 && suffixIndex < 3)
+    {
         size /= 1024;
         suffixIndex++;
     }
@@ -298,23 +309,26 @@ std::string formatSize(double size) {
     return std::string(buffer);
 }
 
-
-int progressBar(void* ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded) {
+int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded)
+{
     // credits: https://stackoverflow.com/a/1639047
-    if (TotalToDownload <= 0.0) {
+    if (TotalToDownload <= 0.0)
+    {
         return 0;
     }
 
     int totaldotz = 40;
     double fractiondownloaded = NowDownloaded / TotalToDownload;
-    int dotz = (int) round(fractiondownloaded * totaldotz);
+    int dotz = (int)round(fractiondownloaded * totaldotz);
 
     int ii = 0;
     printf("\r%.0f%%[", fractiondownloaded * 100);
-    for (; ii < dotz; ii++) {
+    for (; ii < dotz; ii++)
+    {
         printf("=");
     }
-    for (; ii < totaldotz; ii++) {
+    for (; ii < totaldotz; ii++)
+    {
         printf(" ");
     }
     printf("]");
@@ -368,7 +382,7 @@ int fetchPackage(const std::string &package_name, const std::string &package_ver
     return 0;
 }
 
-std::string fetchLatestVersion(const std::string& package_name)
+std::string fetchLatestVersion(const std::string &package_name)
 {
     auto packageInfo = fetchPackageInfo(package_name, "latest");
     return packageInfo.version;
@@ -419,7 +433,7 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     {
         const char *currentFile = archive_entry_pathname(entry);
         std::string fullOutputPath = output_dir;
-        if (fullOutputPath.back() != '/')
+        if (!fullOutputPath.empty() && fullOutputPath[fullOutputPath.size() - 1] != '/')
         {
             fullOutputPath += "/";
         }
@@ -450,11 +464,31 @@ void extract_archive(const std::string &archive_path, const std::string &output_
     archive_write_free(ext);
 }
 
-void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files)
+void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files, std::string package_name, std::string version)
 {
-    std::ofstream outfile(list_path);
-    for (const auto &file : extracted_files)
+    json j;
+    std::ifstream infile(list_path);
+    if (infile.is_open())
     {
-        outfile << file << std::endl;
+        infile >> j;
+        infile.close();
+    }
+
+    json package_info;
+    package_info["package_name"] = package_name;
+    package_info["version"] = version;
+    package_info["extracted_files"] = extracted_files;
+
+    j.push_back(package_info);
+
+    std::ofstream outfile(list_path);
+    if (outfile.is_open())
+    {
+        outfile << j.dump(4);
+        outfile.close();
+    }
+    else
+    {
+        std::cerr << "Could not open file for writing: " << list_path << std::endl;
     }
 }

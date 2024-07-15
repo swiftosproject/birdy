@@ -23,4 +23,4 @@ int fetchPackage(const std::string& package_name, const std::string& package_ver
 std::string fetchLatestVersion(const std::string& package_name);
 void extract_archive(const std::string &archive_path, const std::string &output_dir, std::vector<std::string> &extracted_files);
 int copy_data(struct archive *ar, struct archive *aw);
-void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files);
+void write_extracted_files_list(const std::string &list_path, const std::vector<std::string> &extracted_files, std::string package_name, std::string version);

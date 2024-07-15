@@ -14,12 +14,12 @@ int main(int argc, char *argv[])
         .help("Installs a package")
         .nargs(argparse::nargs_pattern::at_least_one);
 
-    parser.add_argument("-r", "--root")
-        .help("Sets the root where Birdy will install packages")
-        .nargs(1);
-
     parser.add_argument("-u", "--uninstall")
         .help("Uninstalls a package")
+        .nargs(1);
+
+    parser.add_argument("-r", "--root")
+        .help("Sets the root where Birdy will install packages")
         .nargs(1);
 
     parser.add_argument("--fetch")

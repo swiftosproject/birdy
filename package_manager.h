@@ -5,7 +5,7 @@
 #include <vector>
 
 struct PackageInfo {
-    std::string id;
+    int id;
     std::string name;
     std::string description;
     std::string version;
@@ -18,10 +18,5 @@ int install(std::string package, std::string version);
 int uninstall(std::string package);
 int displayPackageInfo(std::string package);
 int displayPackageInfo(std::string package, std::string version);
-bool isPackageInstalled(const std::string &listPath, const std::string &packageName, const std::string &packageVersion);
-bool isPackageInstalled(const std::string &listPath, const std::string &packageName);
-int removePackage(const std::string &packageName);
-std::string fetchLatestVersion(const std::string &packageName);
-PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &packageVersion);
 
 #endif // PACKAGE_MANAGER_H

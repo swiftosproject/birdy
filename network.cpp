@@ -33,7 +33,7 @@ int login(const std::string &username, const std::string &password)
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, payload_str.size());
 
         struct curl_slist *headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/nlohmann::json");
+        headers = curl_slist_append(headers, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
@@ -81,7 +81,7 @@ PackageInfo fetchPackageInfo(const std::string &packageName, const std::string &
     curl = curl_easy_init();
     if (curl)
     {
-        std::string url = (serverAddress + "/packages/" + packageName + "/" + packageVersion + ".nlohmann::json");
+        std::string url = (serverAddress + "/packages/" + packageName + "/" + packageVersion + ".json");
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);

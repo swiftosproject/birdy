@@ -16,7 +16,7 @@ int install(std::string package, std::string version)
     std::vector<std::string> extractedFiles;
     PackageInfo packageInfo = fetchPackageInfo(package, version);
     std::string archivePath = "/tmp/" + packageInfo.files[0];
-    std::string packageListPath = root + "etc/birdy/packages.nlohmann::json";
+    std::string packageListPath = root + "etc/birdy/packages.json";
 
     // Check if already installed
     if (isPackageInstalled(packageListPath, package, version))
@@ -56,7 +56,7 @@ int install(std::string package)
 
 int uninstall(std::string package)
 {
-    std::string packageListPath = root + "etc/birdy/packages.nlohmann::json";
+    std::string packageListPath = root + "etc/birdy/packages.json";
 
     // Check if package is installed
     bool installed = isPackageInstalled(packageListPath, package);
@@ -83,7 +83,8 @@ int uninstall(std::string package)
         }
     }
 
-    // TODO Remove it from installed packages list
+    // Remove package from package list
+    removePackage(packageListPath, package);
 
     return 0;
 }
@@ -111,10 +112,4 @@ int displayPackageInfo(std::string package)
 {
     displayPackageInfo(package, "latest");
     return 0;
-}
-
-std::string fetchLatestVersion(const std::string &packageName)
-{
-    auto packageInfo = fetchPackageInfo(packageName, "latest");
-    return packageInfo.version;
 }

@@ -2,6 +2,7 @@
 #include <fstream>
 #include "utils.h"
 #include "package_manager.h"
+#include "network.h"
 #include <nlohmann/json.hpp>
 
 std::string formatSize(double size)
@@ -131,5 +132,57 @@ std::vector<std::string> getPackageFiles(const std::string &listPath, std::strin
         {
             return packageInfo["files"];
         }
+    }
+}
+
+std::string fetchLatestVersion(const std::string &packageName)
+{
+    auto packageInfo = fetchPackageInfo(packageName, "latest");
+    return packageInfo.version;
+}
+
+int removePackage(const std::string &listPath, const std::string &packageName)
+{
+    nlohmann::json j;
+    std::ifstream infile(listPath);
+    if (infile.is_open())
+    {
+        infile >> j;
+        infile.close();
+    }
+    else
+    {
+        std::cerr << "Could not open file for reading: " << listPath << std::endl;
+        return 1;
+    }
+
+    bool packageFound = false;
+    for (auto it = j.begin(); it != j.end(); ++it)
+    {
+        if ((*it)["name"] == packageName)
+        {
+            j.erase(it);
+            packageFound = true;
+            break;
+        }
+    }
+
+    if (!packageFound)
+    {
+        std::cerr << "Package not found: " << packageName << std::endl;
+        return 2;
+    }
+
+    std::ofstream outfile(listPath);
+    if (outfile.is_open())
+    {
+        outfile << j.dump(4);
+        outfile.close();
+        return 0;
+    }
+    else
+    {
+        std::cerr << "Could not open file for writing: " << listPath << std::endl;
+        return 1;
     }
 }

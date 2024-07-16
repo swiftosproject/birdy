@@ -9,40 +9,81 @@
 #include "archive_manager.h"
 #include "main.h"
 
-int install(std::string package, std::string version)
+int install(std::string package, std::string version, int loglevel, bool reinstall, bool noconfirm)
 {
-    std::cout << "Installing " << package << std::endl;
-    // Fetch package information
-    std::vector<std::string> extractedFiles;
-    PackageInfo packageInfo = fetchPackageInfo(package, version);
-    std::string archivePath = "/tmp/" + packageInfo.files[0];
-    std::string packageListPath = root + "etc/birdy/packages.json";
-
     // Check if already installed
+    std::string packageListPath = root + "etc/birdy/packages.json";
     if (isPackageInstalled(packageListPath, package, version))
     {
-        std::cout << "Already up to date!" << std::endl;
-        return 2;
+        if (!reinstall)
+        return 0;
+
+        if (loglevel >= 2)
+        std::cout << "warning: " << package << " is already up to date - reinstalling" << std::endl;
     }
 
-    // Install dependencies
-    std::cout << "Resolving dependencies..." << std::endl;
+    // Fetch package information
+    if (loglevel >= 4)
+    std::cout << "fetching package metadata...";
+    std::vector<std::string> extractedFiles;
+    PackageInfo packageInfo = fetchPackageInfo(package, version);
+    if (loglevel >= 4)
+    std::cout << "done" << std::endl << std::endl;
+    int packageCount = 1;
     for (const std::string& dependency : packageInfo.dependencies)
     {
-        install(dependency);
+        packageCount++;
+    }
+
+    // Display confirmation and packages to install
+    if(loglevel >= 3)
+    std::cout << "Packages (" << packageCount << ") " << package << " ";
+    
+    if (loglevel >=3)
+    for (const std::string& dependency : packageInfo.dependencies)
+    {
+        std::cout << dependency << " " << std::endl << std::endl;
+    }
+
+    // Ask to procceed with installation
+    std::string procceed;
+    if (!noconfirm)
+    {
+        std::cout << "Procceed with installation? [Y/n] ";
+        std::cin >> procceed;
+    }
+
+    std::cout << std::endl;
+
+    if (procceed != "Y" or "y")
+    {
+        if (loglevel >= 2)
+        {
+            std::cout << "Aborted.";
+        }
+    }
+
+    for (const std::string& dependency : packageInfo.dependencies)
+    {
+        install(dependency, fetchLatestVersion(dependency), loglevel = 0, reinstall = false, noconfirm = true);
     }
 
     // Download package
-    std::cout << "Retrieving packages..." << std::endl;
+    std::string archivePath = "/tmp/" + packageInfo.files[0];
+    if (loglevel >= 2)
+    std::cout << "Fetching packages..." << std::endl;
     fetchPackage(package, version, packageInfo.files[0], archivePath);
 
     // Extract archive
+    if (loglevel >= 2)
     std::cout << "Extracting archive...";
     extractArchive(archivePath, root, extractedFiles);
+    if (loglevel >= 2)
     std::cout << "done" << std::endl;
 
     // Update package list
     writeExtractedFilesList(packageListPath, extractedFiles, package, version);
+    if (loglevel >= 1)
     std::cout << "Successfully installed " << package << "!" << std::endl;
     return 0;
 }

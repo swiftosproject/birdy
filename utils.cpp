@@ -22,6 +22,8 @@ std::string formatSize(double size)
 int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded)
 {
     // credits: https://stackoverflow.com/a/1639047
+    ProgressData *progressData = (ProgressData *)ptr;
+
     if (TotalToDownload <= 0.0)
     {
         return 0;
@@ -31,8 +33,10 @@ int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double 
     double fractiondownloaded = NowDownloaded / TotalToDownload;
     int dotz = (int)round(fractiondownloaded * totaldotz);
 
+    printf("\r%s ", progressData->fileName);
+
     int ii = 0;
-    printf("\r%.0f%%[", fractiondownloaded * 100);
+    printf("%.0f%%[", fractiondownloaded * 100);
     for (; ii < dotz; ii++)
     {
         printf("=");
@@ -46,11 +50,12 @@ int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double 
     std::string nowDownloadedStr = formatSize(NowDownloaded);
     std::string totalToDownloadStr = formatSize(TotalToDownload);
 
-    printf("%s/%s", nowDownloadedStr.c_str(), totalToDownloadStr.c_str());
+    printf(" %s/%s", nowDownloadedStr.c_str(), totalToDownloadStr.c_str());
     printf("\033[K");
     fflush(stdout);
     return 0;
 }
+
 
 void writeExtractedFilesList(const std::string &listPath, const std::vector<std::string> &extractedFiles, std::string packageName, std::string packageVersion)
 {

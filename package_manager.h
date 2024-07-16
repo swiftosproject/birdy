@@ -13,8 +13,8 @@ struct PackageInfo {
     std::vector<std::string> files;
 };
 
+int install(std::string package, std::string version, int loglevel = 4, bool reinstall = true, bool noconfirm = false);
 int install(std::string package);
-int install(std::string package, std::string version);
 int uninstall(std::string package);
 int displayPackageInfo(std::string package);
 int displayPackageInfo(std::string package, std::string version);

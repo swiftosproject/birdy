@@ -4,6 +4,11 @@
 #include <string>
 #include <vector>
 
+struct ProgressData {
+    const char* fileName;
+    double totalToDownload;
+};
+
 std::string formatSize(double size);
 int progressBar(void *ptr, double TotalToDownload, double NowDownloaded, double TotalToUpload, double NowUploaded);
 void writeExtractedFilesList(const std::string &listPath, const std::vector<std::string> &extractedFiles, std::string packageName, std::string packageVersion);

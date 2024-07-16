@@ -134,8 +134,11 @@ int fetchPackage(const std::string &packageName, const std::string &packageVersi
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
+        ProgressData progressData = {file.c_str(), 0.0};
+
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);
         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progressBar);
+        curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, &progressData);
 
         res = curl_easy_perform(curl);
 

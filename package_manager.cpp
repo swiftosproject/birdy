@@ -55,11 +55,12 @@ int install(std::string package, std::string version, int loglevel, bool reinsta
 
     std::cout << std::endl;
 
-    if (procceed != "Y" or "y")
+    if (procceed != "Y" or procceed == "y")
     {
         if (loglevel >= 2)
         {
             std::cout << "Aborted.";
+            return 1;
         }
     }
 

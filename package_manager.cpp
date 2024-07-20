@@ -13,13 +13,16 @@ int install(std::string package, std::string version, int loglevel, bool reinsta
 {
     // Check if already installed
     std::string packageListPath = root + "etc/birdy/packages.json";
+    bool isReinstall = false;
     if (isPackageInstalled(packageListPath, package, version))
     {
+        isReinstall = true;
         if (!reinstall)
         return 0;
 
         if (loglevel >= 2)
         std::cout << "warning: " << package << " is already up to date - reinstalling" << std::endl;
+
     }
 
     // Fetch package information
@@ -53,13 +56,11 @@ int install(std::string package, std::string version, int loglevel, bool reinsta
         std::cin >> procceed;
     }
 
-    std::cout << std::endl;
-
-    if (procceed != "Y" or procceed == "y")
+    if (procceed != "Y" or procceed != "y")
     {
         if (loglevel >= 2)
         {
-            std::cout << "Aborted.";
+            std::cout << "Aborted." << std::endl;
             return 1;
         }
     }
@@ -83,7 +84,14 @@ int install(std::string package, std::string version, int loglevel, bool reinsta
     std::cout << "done" << std::endl;
 
     // Update package list
-    writeExtractedFilesList(packageListPath, extractedFiles, package, version);
+    if (!isReinstall)
+    {
+        if (loglevel >= 4)
+        std::cout << "writing package information...";
+        writeExtractedFilesList(packageListPath, extractedFiles, package, version);
+        if (loglevel >= 4)
+        std::cout << "done" << std::endl;
+    }
     if (loglevel >= 1)
     std::cout << "Successfully installed " << package << "!" << std::endl;
     return 0;

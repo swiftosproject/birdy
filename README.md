@@ -1,3 +1,7 @@
+## Not maintained
+
+Please use [flyingdisk](https://github.com/flyingdiskapp)
+
 # Birdy
 
 ## Information
